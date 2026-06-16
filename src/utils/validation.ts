@@ -18,7 +18,10 @@ export const loginSchema = z.object({
 export const createTierListSchema = z.object({
   body: z.object({
     name: z.string().min(1, 'Nome é obrigatório').max(100),
-    themeImage: z.string().url().nullable().optional(),
+    themeImage: z.string().refine(
+      (val: string) => val.startsWith('data:image/') || /^https?:\/\/.+/.test(val),
+      'Theme image deve ser uma URL válida ou data:image URL'
+    ).nullable().optional(),
     categories: z.array(
       z.object({
         name: z.string().min(1).max(30),
@@ -31,7 +34,10 @@ export const createTierListSchema = z.object({
 export const updateTierListSchema = z.object({
   body: z.object({
     name: z.string().min(1).max(100).optional(),
-    themeImage: z.string().url().nullable().optional(),
+    themeImage: z.string().refine(
+      (val: string) => val.startsWith('data:image/') || /^https?:\/\/.+/.test(val),
+      'Theme image deve ser uma URL válida ou data:image URL'
+    ).nullable().optional(),
     favorite: z.boolean().optional(),
     isPublic: z.boolean().optional(),
   }),
