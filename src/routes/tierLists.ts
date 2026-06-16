@@ -40,8 +40,11 @@ export async function tierListRoutes(app: FastifyInstance) {
 
   app.delete('/:id', { preHandler: authenticate, schema: tierListParamsSchema }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const deleted = await deleteTierList(id, request.user!.id);
-    if (!deleted) return reply.code(404).send({ error: 'Tier List não encontrada' });
+    const result = await deleteTierList(id, request.user!.id);
+    if ('error' in result) {
+      if (result.error === 'NOT_FOUND') return reply.code(404).send({ error: 'Tier List não encontrada' });
+      return reply.code(403).send({ error: 'Acesso negado: você não é o proprietário' });
+    }
     return { success: true };
   });
 

@@ -53,12 +53,18 @@ export async function getTierLists(
   const skip = (page - 1) * pageSize;
 
   const where: Record<string, unknown> = {};
-  if (author === 'me') where.userId = userId;
+  if (author === 'me') {
+    where.userId = userId;
+  } else {
+    // Só mostra tier lists públicas de outros usuários
+    where.isPublic = true;
+  }
   if (favorite) where.favorite = true;
   if (search) {
     where.OR = [
       { name: { contains: search, mode: 'insensitive' } },
-      { user: { name: { contains: search, mode: 'insensitive' } } },
+      { user: { name: { contains: search, mode: 'insensitive' } },
+      }
     ];
   }
 
@@ -134,12 +140,13 @@ export async function updateTierList(
   return formatTierListResponse(updated, updated.user.name);
 }
 
-export async function deleteTierList(id: string, userId: string): Promise<boolean> {
+export async function deleteTierList(id: string, userId: string): Promise<{ success: true } | { error: 'NOT_FOUND' | 'FORBIDDEN' }> {
   const tierList = await prisma.tierList.findUnique({ where: { id } });
-  if (!tierList || tierList.userId !== userId) return false;
+  if (!tierList) return { error: 'NOT_FOUND' };
+  if (tierList.userId !== userId) return { error: 'FORBIDDEN' };
 
   await prisma.tierList.delete({ where: { id } });
-  return true;
+  return { success: true };
 }
 
 export async function saveTierList(
