@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin - Tierlist Maker</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+a { color: #6366f1; text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.login-container { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 1rem; }
+.login-card { background: #1e293b; border-radius: 12px; padding: 2rem; width: 100%; max-width: 400px; box-shadow: 0 4px 24px rgba(0,0,0,.3); }
+.login-card h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
+.login-card p { color: #94a3b8; font-size: 0.875rem; margin-bottom: 1.5rem; }
+.form-group { margin-bottom: 1rem; }
+.form-group label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.375rem; color: #cbd5e1; }
+.form-group input { width: 100%; padding: 0.625rem 0.75rem; background: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #e2e8f0; font-size: 0.875rem; transition: border .2s; }
+.form-group input:focus { outline: none; border-color: #6366f1; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.625rem 1.25rem; border: none; border-radius: 8px; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all .2s; }
+.btn-primary { background: #6366f1; color: #fff; width: 100%; }
+.btn-primary:hover { background: #5558e6; }
+.btn-danger { background: #ef4444; color: #fff; padding: 0.375rem 0.75rem; font-size: 0.75rem; }
+.btn-danger:hover { background: #dc2626; }
+.btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.error-msg { color: #f87171; font-size: 0.8125rem; margin-top: 0.75rem; display: none; }
+
+.dashboard { display: none; }
+.dashboard.visible { display: block; }
+.login-container.hidden { display: none; }
+
+.dash-header { background: #1e293b; border-bottom: 1px solid #334155; padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; }
+.dash-header h1 { font-size: 1.25rem; }
+.dash-header span { color: #94a3b8; font-size: 0.8125rem; }
+.logout-btn { background: none; border: 1px solid #475569; color: #94a3b8; padding: 0.375rem 0.75rem; border-radius: 6px; font-size: 0.75rem; cursor: pointer; }
+.logout-btn:hover { border-color: #ef4444; color: #ef4444; }
+
+.dash-content { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+.stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.stat-card { background: #1e293b; border-radius: 10px; padding: 1rem; text-align: center; }
+.stat-card .number { font-size: 1.75rem; font-weight: 700; color: #6366f1; }
+.stat-card .label { font-size: 0.75rem; color: #94a3b8; margin-top: 0.25rem; }
+
+.search-bar { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+.search-bar input { flex: 1; padding: 0.5rem 0.75rem; background: #1e293b; border: 1px solid #334155; border-radius: 8px; color: #e2e8f0; font-size: 0.875rem; }
+.search-bar input:focus { outline: none; border-color: #6366f1; }
+
+.table-wrap { background: #1e293b; border-radius: 10px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; padding: 0.75rem 1rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; border-bottom: 1px solid #334155; font-weight: 600; }
+td { padding: 0.75rem 1rem; font-size: 0.875rem; border-bottom: 1px solid #1e293b; }
+tr:hover td { background: rgba(99,102,241,0.05); }
+tr:last-child td { border-bottom: none; }
+.email-cell { color: #94a3b8; font-size: 0.8125rem; }
+.date-cell { color: #64748b; font-size: 0.8125rem; white-space: nowrap; }
+.actions-cell { text-align: right; }
+
+.toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 0.75rem 1rem; font-size: 0.875rem; box-shadow: 0 4px 24px rgba(0,0,0,.4); display: none; animation: slideUp .3s ease; z-index: 100; }
+.toast.error { border-color: #ef4444; }
+.toast.success { border-color: #22c55e; }
+@keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+.loading { text-align: center; padding: 3rem; color: #64748b; }
+.loading .spinner { width: 24px; height: 24px; border: 2px solid #334155; border-top-color: #6366f1; border-radius: 50%; animation: spin .6s linear infinite; margin: 0 auto 0.5rem; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 640px) {
+  .dash-header { padding: 0.75rem 1rem; flex-wrap: wrap; gap: 0.5rem; }
+  .dash-content { padding: 1rem; }
+  td, th { padding: 0.5rem 0.625rem; font-size: 0.8125rem; }
+  .email-cell, .date-cell { font-size: 0.75rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="login-container" id="loginContainer">
+  <div class="login-card">
+    <h1>Painel Admin</h1>
+    <p>Tierlist Maker — autenticação separada</p>
+    <div class="form-group">
+      <label for="loginEmail">Email</label>
+      <input type="email" id="loginEmail" placeholder="admin@email.com" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label for="loginPassword">Senha</label>
+      <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <p class="error-msg" id="loginError">Credenciais inválidas</p>
+    <button class="btn btn-primary" id="loginBtn" onclick="handleLogin()">Entrar</button>
+  </div>
+</div>
+
+<div class="dashboard" id="dashboard">
+  <div class="dash-header">
+    <div>
+      <h1>Painel Admin</h1>
+      <span>Tierlist Maker</span>
+    </div>
+    <button class="logout-btn" onclick="handleLogout()">Sair</button>
+  </div>
+
+  <div class="dash-content">
+    <div class="stats-row" id="statsRow"></div>
+
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Buscar por nome ou email..." oninput="renderTable()">
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Email</th>
+            <th>Tier Lists</th>
+            <th>Criado em</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="usersBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const ADMIN_EMAIL = 'ADMIN_EMAIL_PLACEHOLDER';
+
+window.__ADMIN_LOGGED_IN__ = window.__ADMIN_LOGGED_IN__ || false;
+
+if (window.__ADMIN_LOGGED_IN__) {
+  showDashboard();
+} else {
+  document.getElementById('loginContainer').classList.remove('hidden');
+}
+
+async function handleLogin() {
+  const email = document.getElementById('loginEmail').value;
+  const password = document.getElementById('loginPassword').value;
+  const errorEl = document.getElementById('loginError');
+  const btn = document.getElementById('loginBtn');
+
+  errorEl.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Entrando...';
+
+  try {
+    const res = await fetch('/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!res.ok) { errorEl.style.display = 'block'; return; }
+    showDashboard();
+  } catch { errorEl.style.display = 'block'; }
+  finally { btn.disabled = false; btn.textContent = 'Entrar'; }
+}
+
+async function handleLogout() {
+  await fetch('/admin/logout', { method: 'POST' });
+  document.getElementById('dashboard').classList.remove('visible');
+  document.getElementById('loginContainer').classList.remove('hidden');
+}
+
+function showDashboard() {
+  document.getElementById('loginContainer').classList.add('hidden');
+  document.getElementById('dashboard').classList.add('visible');
+  loadUsers();
+}
+
+let users = [];
+let stats = { total: 0, totalLists: 0 };
+
+async function loadUsers() {
+  const tbody = document.getElementById('usersBody');
+  tbody.innerHTML = '<tr><td colspan="5"><div class="loading"><div class="spinner"></div>Carregando...</div></td></tr>';
+
+  try {
+    const res = await fetch('/admin/api/users');
+    const json = await res.json();
+    users = json.data || [];
+    stats.total = users.length;
+    stats.totalLists = users.reduce((s, u) => s + (u._count?.tierLists || 0), 0);
+    renderStats();
+    renderTable();
+  } catch {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:#ef4444;">Erro ao carregar usuários</td></tr>';
+  }
+}
+
+function renderStats() {
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-card"><div class="number">${stats.total}</div><div class="label">Usuários</div></div>
+    <div class="stat-card"><div class="number">${stats.totalLists}</div><div class="label">Tier Lists</div></div>
+  `;
+}
+
+function renderTable() {
+  const query = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = users.filter(u =>
+    u.name.toLowerCase().includes(query) || u.email.toLowerCase().includes(query)
+  );
+
+  const tbody = document.getElementById('usersBody');
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:#64748b;">Nenhum usuário encontrado</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(u => `
+    <tr>
+      <td><strong>${escapeHtml(u.name)}</strong></td>
+      <td class="email-cell">${escapeHtml(u.email)}</td>
+      <td>${u._count?.tierLists || 0}</td>
+      <td class="date-cell">${formatDate(u.createdAt)}</td>
+      <td class="actions-cell">
+        <button class="btn btn-danger" onclick="deleteUser('${u.id}','${escapeHtml(u.email)}')" ${u.email === ADMIN_EMAIL ? 'disabled title="Admin principal"' : ''}>
+          ${u.email === ADMIN_EMAIL ? 'Protegido' : 'Excluir'}
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function deleteUser(id, email) {
+  if (!confirm(`Excluir usuário ${email}?\nTier lists, itens e atividades serão removidos permanentemente.`)) return;
+
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = 'Excluindo...';
+
+  try {
+    const res = await fetch(`/admin/api/users/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const err = await res.json();
+      showToast(err.error || 'Erro ao excluir', 'error');
+      btn.disabled = false;
+      btn.textContent = 'Excluir';
+      return;
+    }
+    showToast(`Usuário ${email} excluído`, 'success');
+    loadUsers();
+  } catch {
+    showToast('Erro ao excluir', 'error');
+    btn.disabled = false;
+    btn.textContent = 'Excluir';
+  }
+}
+
+function showToast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast ' + type;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 4000);
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '-';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+</script>
+
+</body>
+</html>

@@ -10,6 +10,7 @@ import { categoryRoutes } from './routes/categories';
 import { itemRoutes } from './routes/items';
 import { uploadRoutes } from './routes/upload';
 import { activityRoutes } from './routes/activities';
+import { adminRoutes } from './routes/admin';
 
 export async function buildApp() {
   const app = Fastify({ logger: true });
@@ -42,6 +43,11 @@ export async function buildApp() {
   await app.register(itemRoutes, { prefix: '/api' });
   await app.register(uploadRoutes, { prefix: '/api' });
   await app.register(activityRoutes, { prefix: '/api' });
+
+  // Admin panel
+  if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
+    await app.register(adminRoutes, { prefix: '/admin' });
+  }
 
   return app;
 }
