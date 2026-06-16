@@ -142,6 +142,74 @@ export async function deleteTierList(id: string, userId: string): Promise<boolea
   return true;
 }
 
+export async function saveTierList(
+  id: string,
+  userId: string,
+  userName: string,
+  data: {
+    name?: string;
+    themeImage?: string | null;
+    categories: { name: string; color: string; order: number; items: { name: string; imageUrl?: string | null }[] }[];
+  }
+): Promise<TierListResponse | null> {
+  const tierList = await prisma.tierList.findUnique({ where: { id } });
+  if (!tierList || tierList.userId !== userId) return null;
+
+  const result = await prisma.$transaction(async (tx) => {
+    // Delete all existing items and categories
+    await tx.tierItem.deleteMany({ where: { tierListId: id } });
+    await tx.category.deleteMany({ where: { tierListId: id } });
+
+    // Re-create categories with items
+    for (const cat of data.categories) {
+      await tx.category.create({
+        data: {
+          name: cat.name,
+          color: cat.color,
+          order: cat.order,
+          tierListId: id,
+          items: {
+            create: cat.items.map((item) => ({
+              name: item.name,
+              imageUrl: item.imageUrl || null,
+              tierListId: id,
+            })),
+          },
+        },
+      });
+    }
+
+    // Update tier list metadata
+    const updateData: Record<string, unknown> = {};
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.themeImage !== undefined) updateData.themeImage = data.themeImage;
+
+    const updated = await tx.tierList.update({
+      where: { id },
+      data: {
+        ...updateData,
+        activities: {
+          create: {
+            userId,
+            userName,
+            action: `Salvou a Tier List "${data.name || tierList.name}"`,
+          },
+        },
+      },
+      include: {
+        categories: { orderBy: { order: 'asc' } },
+        items: true,
+        user: { select: { name: true } },
+        activities: { orderBy: { timestamp: 'desc' }, take: 20 },
+      },
+    });
+
+    return updated;
+  });
+
+  return formatTierListResponse(result, result.user.name);
+}
+
 function getOrderBy(sortBy: string): Prisma.TierListOrderByWithRelationInput {
   switch (sortBy) {
     case 'created':

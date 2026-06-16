@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { createTierListSchema, updateTierListSchema, tierListParamsSchema, listQuerySchema } from '../utils/validation';
-import { createTierList, getTierLists, getTierListById, updateTierList, deleteTierList } from '../services/tierList';
-import { authenticate, optionalAuth, requireOwnership } from '../middleware/auth';
+import { createTierList, getTierLists, getTierListById, updateTierList, deleteTierList, saveTierList } from '../services/tierList';
+import { authenticate, optionalAuth } from '../middleware/auth';
 
 export async function tierListRoutes(app: FastifyInstance) {
   app.get('/', { preHandler: optionalAuth, schema: listQuerySchema }, async (request) => {
@@ -32,7 +32,6 @@ export async function tierListRoutes(app: FastifyInstance) {
 
   app.patch('/:id', { preHandler: authenticate, schema: updateTierListSchema }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    if (!requireOwnership(request, reply, id)) return;
     const data = request.body as any;
     const updated = await updateTierList(id, request.user!.id, data);
     if (!updated) return reply.code(404).send({ error: 'Tier List não encontrada' });
@@ -41,9 +40,16 @@ export async function tierListRoutes(app: FastifyInstance) {
 
   app.delete('/:id', { preHandler: authenticate, schema: tierListParamsSchema }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    if (!requireOwnership(request, reply, id)) return;
     const deleted = await deleteTierList(id, request.user!.id);
     if (!deleted) return reply.code(404).send({ error: 'Tier List não encontrada' });
     return { success: true };
+  });
+
+  app.put('/:id/save', { preHandler: authenticate }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const { name, themeImage, categories } = request.body as any;
+    const result = await saveTierList(id, request.user!.id, request.user!.name, { name, themeImage, categories });
+    if (!result) return reply.code(404).send({ error: 'Tier List não encontrada ou acesso negado' });
+    return result;
   });
 }

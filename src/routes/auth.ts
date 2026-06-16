@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { registerSchema, loginSchema } from '../utils/validation';
-import { registerUser, loginUser, refreshAccessToken, logoutUser, getUserById, updateUser } from '../services/auth';
+import { registerUser, loginUser, refreshAccessToken, logoutUser, updateUser, deleteUser, getUserWithAvatar } from '../services/auth';
 import { authenticate } from '../middleware/auth';
 
 export async function authRoutes(app: FastifyInstance) {
@@ -72,7 +72,7 @@ export async function authRoutes(app: FastifyInstance) {
   });
 
   app.get('/me', { preHandler: authenticate }, async (request) => {
-    const user = await getUserById(request.user!.id);
+    const user = await getUserWithAvatar(request.user!.id);
     return { user };
   });
 
@@ -80,5 +80,11 @@ export async function authRoutes(app: FastifyInstance) {
     const { name, avatarUrl } = request.body as { name?: string; avatarUrl?: string | null };
     const user = await updateUser(request.user!.id, { name, avatarUrl });
     return { user };
+  });
+
+  app.delete('/me', { preHandler: authenticate }, async (request, reply) => {
+    await deleteUser(request.user!.id);
+    reply.clearCookie('refreshToken', { path: '/' });
+    return { success: true };
   });
 }

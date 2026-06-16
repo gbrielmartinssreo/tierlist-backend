@@ -132,7 +132,20 @@ export async function updateUser(
   const user = await prisma.user.update({
     where: { id },
     data,
-    select: { id: true, email: true, name: true },
+    select: { id: true, email: true, name: true, avatarUrl: true },
   });
-  return user ? { id: user.id, email: user.email, name: user.name } : null;
+  return user ? { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl } : null;
+}
+
+export async function deleteUser(id: string): Promise<boolean> {
+  await prisma.user.delete({ where: { id } });
+  return true;
+}
+
+export async function getUserWithAvatar(id: string): Promise<{ id: string; email: string; name: string; avatarUrl: string | null } | null> {
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: { id: true, email: true, name: true, avatarUrl: true },
+  });
+  return user ? { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl } : null;
 }

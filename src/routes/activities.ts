@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { activitiesQuerySchema } from '../utils/validation';
-import { authenticate, optionalAuth, requireOwnership } from '../middleware/auth';
+import { authenticate, optionalAuth } from '../middleware/auth';
 import { prisma } from '../utils/prisma';
 
 export async function activityRoutes(app: FastifyInstance) {
